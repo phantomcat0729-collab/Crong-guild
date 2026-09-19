@@ -1,0 +1,1566 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>크롱단 대시보드 v5</title>
+<style>
+:root{
+  --bg:#07111c; --panel:#0d1926; --panel2:#101f2e; --line:#29425a; --txt:#eef6ff; --muted:#8ea4ba;
+  --green:#44db88; --blue:#4aa7ff; --red:#ff5968; --gold:#f4c84f;
+
+  --profile-size:300;
+  --profile-x:0;
+  --profile-y:36;
+  --podium-size:270;
+  --podium-x:0;
+  --podium-y:72;
+
+  --podium-bg-size:100;
+  --podium-bg-x:0;
+  --podium-bg-y:0;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#07111c;color:var(--txt);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+
+.layout{min-height:100vh;display:grid;grid-template-columns:190px 1fr;align-items:start}
+.side{position:sticky;top:0;height:100vh;padding:25px 14px;background:linear-gradient(#0c1b29,#091522);border-right:1px solid #274056}
+.logo{text-align:center;font-size:30px;font-weight:1000;color:#eaffef;margin:8px 0 24px}
+.logo small{display:block;font-size:11px;color:#54dd8d;margin-top:4px;line-height:1.2}
+.nav button{width:100%;text-align:left;border:1px solid transparent;background:transparent;color:#a9bfd3;border-radius:9px;padding:9px 10px;margin:2px 0;font-weight:800;font-size:13px;line-height:1.2}
+.nav button.on{color:#52e292;background:#123527;border-color:#2b9d60}
+.main{max-width:1040px;width:100%;margin:0 auto;align-self:start;padding:18px 18px 24px}
+.page{display:none}
+.page.on{display:block}
+
+.panel{background:linear-gradient(145deg,#0e1b29,#0b1622);border:1px solid #29445c;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 12px 30px #0003}
+.awardVisual{
+overflow:hidden;
+border:1px solid #29445c;
+border-radius:16px;
+background:
+linear-gradient(rgba(7,17,28,.20), rgba(7,17,28,.30)),
+var(--podium-bg, radial-gradient(circle at 50% 0,#184e79,#0c1b2a 65%));
+background-size:calc(var(--podium-bg-size) * 1%) auto;
+background-position:calc(50% + (var(--podium-bg-x) * 1px)) calc(50% + (var(--podium-bg-y) * 1px));
+background-repeat:no-repeat;
+padding:18px 18px 0;
+}
+.awardEditorPanel{background:linear-gradient(145deg,#0e1b29,#0b1622)}
+.awardEditorControls{padding-top:12px}
+.heroHead{text-align:center}
+.heroHead h1{margin:4px;font-size:29px}
+.heroHead p{margin:5px;color:#c5d2df;font-weight:800}
+
+.btn{border:1px solid #304a63;background:#132438;color:#e8f2fc;border-radius:9px;padding:10px 14px;font-weight:900}
+.btn.green{background:#45df8b;color:#062515;border:0}
+.btn.red{background:#3a1b25;color:#ff8490}
+.btn.gold{background:#f2c653;color:#2c2102;border:0}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.head h2{margin:0;font-size:20px}
+
+input,select,textarea{background:#091522;border:1px solid #2b455d;color:#fff;border-radius:9px;padding:10px}
+.filters{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}
+.chip{border:1px solid #34516b;border-radius:999px;padding:7px 11px;font-size:12px;font-weight:900;color:#bfd0df}
+.chip.green{color:#54e590;border-color:#237d4c}
+.chip.red{color:#ff7c86;border-color:#7d3038}
+.chip.blue{color:#5eb5ff;border-color:#276d9d}
+
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:0;min-height:300px;margin-top:0}
+.place{width:33.333%;text-align:center}
+.charStage{height:180px;position:relative;overflow:visible}
+.char{
+  position:absolute;left:50%;bottom:0;
+  width: calc(var(--podium-size) * 1px);
+  height: calc(var(--podium-size) * 1px);
+  max-width:none;object-fit:contain;
+  transform:translate(calc(-50% + (var(--podium-x) * 1px)), calc(var(--podium-y) * 1px));
+  filter:drop-shadow(0 8px 8px #0008)
+}
+.who{
+display:inline-block;background:transparent;padding:2px 6px;border-radius:0;font-weight:900;position:relative;z-index:3;
+white-space:nowrap;max-width:calc(100% - 12px);overflow:hidden;text-overflow:ellipsis;
+font-size:clamp(11px,2.2vw,14px);line-height:1.1;transform:translateY(8px);
+text-shadow:0 2px 6px rgba(0,0,0,.75)
+}
+.step{font-size:36px;font-weight:1000;padding-top:20px;border-radius:10px 10px 0 0}
+.p1 .step{height:120px;background:linear-gradient(#e6c34c,#775709);color:#fff1a5}
+.p2 .step{height:88px;background:linear-gradient(#dbe7f0,#657687)}
+.p3 .step{height:72px;background:linear-gradient(#d99568,#74462d)}
+
+.member{display:grid;grid-template-columns:1.45fr 2fr 1.1fr .6fr;gap:10px;align-items:center;padding:10px 9px;border-top:1px solid #20374c;font-size:13px}.awayInfo{grid-column:1/-1;margin:2px 0 4px 53px;padding:7px 10px;border-radius:9px;background:#12202d;border:1px solid #29445c;color:#c7d5e2;font-size:12px}.awayInfo b{color:#5eb5ff}
+.person{display:flex;align-items:center;gap:9px;font-weight:900}
+.face{width:44px;height:44px;border-radius:50%;overflow:hidden;background:#07101a;border:2px solid #3d5970;position:relative}
+.face img{
+  position:absolute;left:50%;top:50%;
+  width: calc(var(--profile-size) * 1px);
+  height: calc(var(--profile-size) * 1px);
+  max-width:none;object-fit:contain;transform:translate(-50%,-50%);
+  margin-left: calc(var(--profile-x) * 1px);
+  margin-top: calc(var(--profile-y) * 1px);
+}
+.status{font-weight:900}
+.status.ok{color:#43dc82}
+.status.off{color:#ff616c}
+.status.away{color:#ffd04f}
+.badges,.tags{display:flex;gap:5px;flex-wrap:wrap}
+.badge{border-radius:999px;padding:5px 8px;font-size:10px;font-weight:900;background:#172a3d;border:1px solid #35516b;color:#fff}
+.badge.done{background:#1b7549;color:#dffff0}
+.badge.miss{background:#402029;color:#ff9ca4}
+.tag{border-radius:999px;padding:5px 8px;font-size:10px;font-weight:900;color:#fff}
+.rainbow{background:linear-gradient(90deg,#ff5656,#ffc84e,#56df77,#5ac8ff,#8e62ff,#ff69cc);background-size:300% 100%;animation:rb 3s linear infinite}
+@keyframes rb{to{background-position:300% 0}}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.muted{color:var(--muted);font-size:12px}
+.history{border-left:2px solid #2c8d59;padding:8px 12px;margin:8px 0}
+.history time{color:#58e390;font-size:11px}
+.history b{display:block}
+.tagrow{display:flex;gap:8px;align-items:center;padding:10px;border-top:1px solid #21394e}.spacer{flex:1}
+.modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:15px;z-index:9}
+.modal.on{display:flex}.box{width:min(560px,100%);background:#0d1b29;border:1px solid #31506a;border-radius:16px;padding:18px;max-height:90vh;overflow:auto}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:9px}.full{grid-column:1/-1}
+.form label{font-size:12px;color:#a9bdcf}.form input,.form select,.form textarea{display:block;width:100%;margin-top:5px}
+
+.awardSwitch{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.subtab{border:1px solid #34516b;background:#102132;color:#bcd0df;border-radius:10px;padding:10px 14px;font-weight:900}
+.subtab.on{background:#173527;border-color:#2b9d60;color:#57e492}
+.bgTools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.bgPreview{width:100%;max-width:240px;height:84px;border-radius:12px;border:1px solid #29445c;background:
+linear-gradient(rgba(7,17,28,.28), rgba(7,17,28,.42)),
+var(--podium-bg, radial-gradient(circle at 50% 0,#184e79,#0c1b2a 65%));
+background-size:cover;background-position:center}
+.smallMuted{font-size:11px;color:#9bb0c2}
+
+.ctrl{margin:12px 0}
+.ctrl label{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#c9d6e1;margin-bottom:6px}
+.ctrl input[type="range"]{width:100%}
+.previewNickRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 16px}
+.previewCard{padding:14px}
+.previewLabel{font-size:13px;color:#bcd0df;margin-bottom:10px;font-weight:800}
+
+
+
+
+
+
+
+
+
+
+
+@media(max-width:760px){
+  .layout{display:block}
+  .side{position:sticky;height:auto;z-index:5;padding:9px;display:flex;align-items:center;overflow:auto}
+  .logo{font-size:17px;margin:0 10px 0 2px;white-space:nowrap;text-align:left;line-height:1.05}
+  .logo small{display:block;font-size:8px;margin-top:3px;color:#54dd8d;max-width:92px;overflow:hidden;text-overflow:ellipsis}
+  .nav{display:flex}
+  .nav button{white-space:nowrap;width:auto;padding:7px 9px;font-size:12px;margin:0 2px}
+  .main{padding:10px}
+  .heroHead h1{font-size:22px}
+  .podium{min-height:250px}
+  .charStage{height:145px}
+  .step{font-size:27px}.p1 .step{height:98px}.p2 .step{height:76px}.p3 .step{height:62px}
+  .member{grid-template-columns:1fr;gap:8px}.awayInfo{margin-left:0}
+  .two{grid-template-columns:1fr}
+  .form{grid-template-columns:1fr}
+}
+
+
+
+
+.bgControlPanel{margin-top:12px;padding:12px;border:1px solid #29445c;border-radius:12px;background:#0d1b29}
+.bgControlPanel .ctrl{margin:10px 0}
+.bgUploadRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.bgUploadRow input[type="file"]{max-width:100%}
+.bgStatus{font-size:12px;color:#9bb0c2}
+
+
+.dashAwardSwitch{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.dashAwardSwitch button{border:1px solid #35516b;background:#102132;color:#c8d8e7;border-radius:10px;padding:9px 14px;font-weight:900}
+.dashAwardSwitch button.on{background:#173527;border-color:#2b9d60;color:#59e697}
+
+/* tag special effects */
+.tag{position:relative;isolation:isolate;transition:.2s ease}
+.tag.effect-none{}
+.tag.effect-shadow{box-shadow:0 5px 12px rgba(0,0,0,.55);text-shadow:0 1px 2px rgba(0,0,0,.65)}
+.tag.effect-glow{
+  box-shadow:0 0 7px currentColor,0 0 14px color-mix(in srgb,currentColor 65%,transparent);
+  text-shadow:0 0 5px rgba(255,255,255,.75)
+}
+.tag.effect-pulse{animation:tagPulse var(--tag-speed,3s) ease-in-out infinite}
+@keyframes tagPulse{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.08);filter:brightness(1.3)}}
+.tag.effect-shimmer{
+  overflow:hidden;
+  box-shadow:0 3px 10px rgba(0,0,0,.35)
+}
+.tag.effect-shimmer::after{
+  content:"";position:absolute;inset:-40% auto -40% -35%;width:28%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.8),transparent);
+  transform:skewX(-18deg);animation:tagShimmer var(--tag-speed,4s) linear infinite;z-index:1;pointer-events:none
+}
+.tag.effect-shimmer{z-index:0}
+.tag.effect-shimmer::before{content:"";position:absolute;inset:0;background:transparent;z-index:-1}
+@keyframes tagShimmer{0%{left:-40%}100%{left:120%}}
+.tag.effect-neon{
+  border:1px solid rgba(255,255,255,.55);
+  box-shadow:0 0 5px var(--tag-c1),0 0 12px var(--tag-c1),inset 0 0 6px rgba(255,255,255,.18);
+  text-shadow:0 0 4px #fff,0 0 8px var(--tag-c1)
+}
+.tagEffectHelp{font-size:11px;color:#8ea4ba;margin-top:5px}
+
+
+.statusSettings{margin-top:14px}
+.statusSettingRow{
+  display:grid;grid-template-columns:110px 1fr 90px;gap:8px;align-items:center;
+  padding:10px 0;border-top:1px solid #21394e
+}
+.statusSettingRow:first-child{border-top:0}
+.statusPreview{font-weight:900}
+@media(max-width:760px){
+  .statusSettingRow{grid-template-columns:1fr 90px}
+  .statusSettingRow .statusKey{grid-column:1/-1}
+}
+
+
+/* v6.3 repaired animated tag effects */
+.tag.effect-rainbow{
+  background-image:linear-gradient(
+    90deg,
+    #ff4d6d 0%,
+    #ffae42 14%,
+    #ffe95a 28%,
+    #52df7c 42%,
+    #4db9ff 56%,
+    #9468ff 70%,
+    #ff5fc5 84%,
+    #ff4d6d 100%
+  ) !important;
+  background-size:500% 100% !important;
+  background-position:0% 50%;
+  animation:krongRainbowFlow var(--tag-speed,8s) linear infinite !important;
+  will-change:background-position;
+}
+
+.tag.effect-gradient{
+  background-image:linear-gradient(
+    90deg,
+    var(--tag-c1) 0%,
+    var(--tag-c2) 20%,
+    var(--tag-c1) 40%,
+    var(--tag-c2) 60%,
+    var(--tag-c1) 80%,
+    var(--tag-c2) 100%
+  ) !important;
+  background-size:500% 100% !important;
+  background-position:0% 50%;
+  animation:krongGradientFlow var(--tag-speed,8s) linear infinite !important;
+  will-change:background-position;
+}
+
+@keyframes krongRainbowFlow{
+  0%{background-position:0% 50%}
+  100%{background-position:500% 50%}
+}
+@keyframes krongGradientFlow{
+  0%{background-position:0% 50%}
+  100%{background-position:500% 50%}
+}
+
+/* Fallback movement so it still looks animated on browsers that optimize gradients */
+.tag.effect-rainbow,
+.tag.effect-gradient{
+  transform:translateZ(0);
+}
+
+
+.statusTagLine{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  min-width:0;
+}
+.statusTagLine .status{white-space:nowrap}
+.statusTagLine .tags{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.historyIcon{font-size:20px;line-height:1;margin-right:7px}
+.historyTitleLine{display:flex;align-items:center;gap:5px}
+.historyIconChoices{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:6px}
+.historyIconChoices label{
+  display:flex;align-items:center;justify-content:center;
+  min-height:42px;border:1px solid #304a63;border-radius:9px;background:#101e2c;
+  font-size:21px;cursor:pointer
+}
+.historyIconChoices input{display:none}
+.historyIconChoices label:has(input:checked){border-color:#44db88;background:#163729;box-shadow:0 0 0 1px #44db8844}
+@media(max-width:760px){
+  .member{grid-template-columns:1fr !important;gap:9px}
+  .statusTagLine{width:100%;gap:7px}
+  .awayInfo{margin-left:0}
+}
+
+
+.history{position:relative;padding-right:120px}
+.historyActions{position:absolute;right:10px;top:10px;display:flex;gap:6px}
+.historyActions .btn{padding:6px 9px;font-size:11px}
+@media(max-width:760px){
+  .history{padding-right:12px;padding-bottom:48px}
+  .historyActions{top:auto;bottom:8px;right:8px}
+}
+
+
+.newsItem{position:relative;padding:14px 130px 14px 14px;margin:10px 0;border:1px solid #29445c;border-radius:13px;background:#0e1b29}
+.newsMeta{display:flex;gap:8px;align-items:center;color:#8ea4ba;font-size:11px;margin-bottom:5px}
+.newsTitle{display:flex;align-items:center;gap:7px;font-weight:900;font-size:16px;margin-bottom:6px}
+.newsBody{color:#c8d5e2;font-size:13px;white-space:pre-wrap}
+.newsActions{position:absolute;right:10px;top:10px;display:flex;gap:6px}
+.newsActions .btn{padding:6px 9px;font-size:11px}
+.newsBadge{border-radius:999px;padding:3px 7px;font-size:10px;font-weight:900;background:#173527;color:#65e49d}
+@media(max-width:760px){
+ .newsItem{padding-right:12px;padding-bottom:48px}
+ .newsActions{top:auto;bottom:8px}
+}
+
+
+.memberMemo{color:#c9d6e1;font-size:12px}
+
+
+.wantedGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.wantedCard{
+  position:relative;display:grid;grid-template-columns:72px 1fr auto;gap:12px;align-items:center;
+  padding:14px;border:1px solid #6b4b35;border-radius:14px;
+  background:linear-gradient(145deg,#2b2118,#17140f);box-shadow:0 10px 24px #0004
+}
+.wantedAvatar{
+  width:68px;height:68px;border-radius:50%;overflow:hidden;position:relative;
+  background:#0b1118;border:3px solid #9d6b3f
+}
+.wantedAvatar img{
+  position:absolute;left:50%;top:50%;
+  width:calc(var(--profile-size) * 1px);
+  height:calc(var(--profile-size) * 1px);
+  max-width:none;object-fit:contain;transform:translate(-50%,-50%);
+  margin-left:calc(var(--profile-x) * 1px);
+  margin-top:calc(var(--profile-y) * 1px)
+}
+.wantedName{font-size:18px;font-weight:1000;color:#ffd18a;margin-bottom:5px}
+.wantedReason{color:#ead8c2;font-size:13px;white-space:pre-wrap;line-height:1.45}
+.wantedMeta{font-size:11px;color:#b99f84;margin-top:6px}
+.wantedActions{display:flex;gap:6px;flex-direction:column}
+.wantedActions .btn{padding:7px 9px;font-size:11px}
+.wantedStamp{
+  position:absolute;right:12px;top:10px;font-size:10px;font-weight:1000;letter-spacing:1px;
+  color:#ff8f78;border:1px solid #a64c3e;border-radius:6px;padding:3px 6px;transform:rotate(4deg);opacity:.85
+}
+@media(max-width:760px){
+  .wantedGrid{grid-template-columns:1fr}
+  .wantedCard{grid-template-columns:64px 1fr}
+  .wantedActions{grid-column:1/-1;flex-direction:row;justify-content:flex-end}
+  .wantedAvatar{width:60px;height:60px}
+}
+
+
+/* v6.9 admin gate */
+.adminOnly{display:none !important}
+body.admin-mode .adminOnly{display:flex !important}
+body.admin-mode .adminOnly.block{display:block !important}
+body.admin-mode .adminOnly.grid{display:grid !important}
+body.admin-mode .adminOnly.inline{display:inline-flex !important}
+
+.adminLoginBox{max-width:420px}
+.adminHint{font-size:12px;color:#8ea4ba;line-height:1.5;margin-top:8px}
+.adminState{font-size:10px;color:#8ea4ba;margin:4px 0 0 4px}
+.adminNavBtn{border-color:#35516b !important}
+body.admin-mode .adminNavBtn{color:#6df0a4 !important;border-color:#2b9d60 !important;background:#123527 !important}
+.guestViewNote{
+  margin:10px 0;padding:9px 11px;border:1px solid #29445c;border-radius:10px;
+  color:#9fb4c7;font-size:12px;background:#0c1824
+}
+body.admin-mode .guestViewNote{display:none}
+
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="side">
+    <div class="logo">🦖 크롱단<small id="guildSubtitle">같이, 오래, 재미있게</small></div>
+    <div class="nav">
+      <button class="on" data-p="dash">⌂ 대시보드</button>
+      <button class="adminOnly block" data-p="members">♟ 길드원 관리</button>
+      <button data-p="awards">🏆 주간 TOP3</button>
+      <button data-p="history">▤ 길드 기록관</button><button data-p="news">📰 뉴스</button><button data-p="wanted">🎯 현상수배</button>
+      <button class="adminOnly block" data-p="tags">◇ 태그 설정</button>
+      <button class="adminOnly block" data-p="avatarTune">🛠 이미지 조정</button>
+      <button id="adminNavButton" class="adminNavBtn" type="button" onclick="toggleAdminLogin()">🔐 관리자 로그인</button>
+      <div id="adminState" class="adminState">일반 열람 모드</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section id="dash" class="page on">
+      <div id="dashAwardSwitch"></div>
+      <div id="dashPodium"></div>
+      <div class="panel">
+        <div class="head"><h2>♟ 길드원 목록</h2><button class="btn green adminOnly inline" onclick="openMember()">+ 길드원 추가</button></div>
+        <div id="stats" class="filters"></div>
+        <div id="dashMembers"></div>
+      </div>
+    </section>
+
+    <section id="members" class="page">
+      <div class="panel">
+        <div class="head"><h2>길드원 관리</h2><button class="btn green adminOnly inline" onclick="openMember()">+ 길드원 추가</button></div>
+        
+        <div id="memberList"></div>
+      </div>
+    </section>
+
+    <section id="awards" class="page">
+      <div class="guestViewNote">일반 열람 모드입니다. 관리자 로그인 후 TOP3 편집 및 배경 조정 기능을 사용할 수 있습니다.</div>
+      <div id="awardEditor"></div>
+    </section>
+
+    <section id="history" class="page">
+      <div class="panel">
+        <div class="head"><h2>🗃 크롱단 기록관</h2><button class="btn green adminOnly inline" onclick="openHistory()">+ 사건 기록</button></div>
+        <p class="muted">길드의 크고 작은 사건을 날짜별로 남깁니다.</p>
+        <div id="historyList"></div>
+      </div>
+    </section>
+
+    <section id="news" class="page">
+      <div class="panel">
+        <div class="head"><h2>📰 크롱단 뉴스</h2><button class="btn green adminOnly inline" onclick="openNews()">+ 뉴스 작성</button></div>
+        <p class="muted">길드 소식, 업데이트, 이벤트, 공지성 이야기를 뉴스처럼 정리할 수 있어.</p>
+        <div id="newsList"></div>
+      </div>
+    </section>
+
+    <section id="wanted" class="page">
+      <div class="panel">
+        <div class="head"><h2>🎯 현상수배</h2><button class="btn green adminOnly inline" onclick="openWanted()">+ 현상수배 등록</button></div>
+        <p class="muted">크롱단 현상수배 명단입니다. 등록된 대상과 사유를 확인해보세요.</p>
+        <div id="wantedList" class="wantedGrid"></div>
+      </div>
+    </section>
+
+    <section id="tags" class="page">
+      <div class="panel">
+        <div class="head"><h2>태그 설정</h2><button class="btn green adminOnly inline" onclick="openTag()">+ 새 태그</button></div>
+        <div id="tagList"></div>
+      </div>
+
+      <div class="panel">
+        <div class="head"><h2>길드 문구 설정</h2></div>
+        <p class="muted">PC와 모바일의 크롱단 로고 아래에 표시되는 짧은 문구야.</p>
+        <div class="form">
+          <label class="full">로고 아래 문구
+            <input id="guildSubtitleInput" maxlength="40" placeholder="예: 같이, 오래, 재미있게">
+          </label>
+        </div>
+        <div class="controls"><button class="btn green" onclick="saveGuildSubtitle()">문구 저장</button></div>
+      </div>
+
+      <div class="panel">
+        <div class="head"><h2>접속 상태 설정</h2></div>
+        <p class="muted">접속 상태 이름과 색상을 직접 바꿀 수 있어.</p>
+        <div id="statusSettings" class="statusSettings"></div>
+      </div>
+    </section>
+
+    
+<section id="avatarTune" class="page">
+  <div class="panel">
+    <div class="head"><h2>🛠 이미지 위치 / 크기 직접 조정</h2></div>
+    <p class="muted">예시도 실제 첫 대시보드와 똑같은 칸 규격으로 바꿨어. 여기서 맞춘 값이 대시보드에도 같은 비율로 적용돼.</p>
+
+    <div class="previewNickRow">
+      <label class="muted">예시 닉네임</label>
+      <input id="previewNick" placeholder="예: 뒤플레시" style="min-width:180px">
+      <button class="btn" onclick="applyPreviewNick()">예시 적용</button>
+    </div>
+
+    <div class="two">
+      <div class="panel previewCard">
+        <h3>프로필 프사 조정</h3>
+        <div class="ctrl"><label>확대 크기 <span id="profileSizeVal"></span></label><input id="profileSize" type="range" min="120" max="420" step="1"></div>
+        <div class="ctrl"><label>좌우 이동 <span id="profileXVal"></span></label><input id="profileX" type="range" min="-120" max="120" step="1"></div>
+        <div class="ctrl"><label>상하 이동 <span id="profileYVal"></span></label><input id="profileY" type="range" min="-120" max="120" step="1"></div>
+        <div class="previewLabel">실제 대시보드와 같은 프로필 칸 미리보기</div>
+        <div class="panel" style="margin:0">
+          <div class="member" style="border-top:0">
+            <div class="person"><div class="face"><img id="previewProfileImg" src=""></div><span id="previewProfileName">예시 닉네임</span></div>
+            <div><span class="status ok">● 접속</span></div>
+            <div class="badges">
+              <span class="badge miss">토벌전 미참</span>
+              <span class="badge done">✓ 길드콘텐츠 완료</span>
+            </div>
+            <div class="tags"><span class="tag" style="background:#8c3acb">핵심멤버</span></div>
+            <div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel previewCard">
+        <h3>시상대 전신 조정</h3>
+        <div class="ctrl"><label>확대 크기 <span id="podiumSizeVal"></span></label><input id="podiumSize" type="range" min="140" max="420" step="1"></div>
+        <div class="ctrl"><label>좌우 이동 <span id="podiumXVal"></span></label><input id="podiumX" type="range" min="-120" max="120" step="1"></div>
+        <div class="ctrl"><label>상하 이동 <span id="podiumYVal"></span></label><input id="podiumY" type="range" min="-180" max="180" step="1"></div>
+        <div class="previewLabel">실제 대시보드와 같은 시상대 칸 미리보기</div>
+        <div class="panel hero" style="margin:0">
+          <div class="heroHead"><h1 style="font-size:22px;margin-bottom:4px">🦖 크롱단 길드 9월 n째주</h1><p>토벌전 TOP3</p></div>
+          <div class="podium">
+            <div class="place p2"><div class="charStage"></div><div class="who">미정</div><div class="step">2</div></div>
+            <div class="place p1">
+              <div class="charStage"><img id="previewPodiumImg" class="char" src=""></div>
+              <div class="who">👑 <span id="previewPodiumName">예시 닉네임</span></div>
+              <div class="step">1</div>
+            </div>
+            <div class="place p3"><div class="charStage"></div><div class="who">미정</div><div class="step">3</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" onclick="resetAvatarTuning()">기본값으로 초기화</button>
+      <button class="btn green" onclick="go('dash')">대시보드로 돌아가기</button>
+    </div>
+  </div>
+</section>
+  </main>
+</div>
+
+<div id="memberModal" class="modal"><div class="box">
+  <h2>길드원</h2>
+  <div class="form">
+    <label>닉네임<input id="mName"></label>
+    <label>접속 상태<select id="mStatus"><option id="mStatusOk" value="ok">접속</option><option id="mStatusOff" value="off">미접속</option><option id="mStatusAway" value="away">미접속 예약</option></select></label>
+    <label>예약 시작<input id="mFrom" type="date"></label>
+    <label>예약 종료<input id="mTo" type="date"></label>
+    <label class="full">미접속 예약 사유<input id="mAwayReason" placeholder="예: 출장, 여행, 개인사정"></label>
+    <label class="full">길드원 기본 메모<input id="mMemo" placeholder="예: 운영진, 복귀 예정, 참고사항"></label>
+    <div class="full"><span class="muted">태그</span><div id="mTags" class="badges" style="margin-top:8px"></div></div>
+  </div>
+  <div class="controls"><button class="btn green" onclick="saveMember()">저장</button><button class="btn" onclick="closeM('memberModal')">취소</button></div>
+</div></div>
+
+<div id="tagModal" class="modal"><div class="box">
+  <h2>태그</h2>
+  <div class="form">
+    <label>태그명<input id="tName"></label>
+    <label>기본 색상<input id="tColor" type="color" value="#3377dd"></label>
+    <label>보조 색상<input id="tColor2" type="color" value="#8c5cff"></label>
+    <label>특수효과
+      <select id="tEffect">
+        <option value="none">없음</option>
+        <option value="shadow">그림자</option>
+        <option value="glow">은은한 광채</option>
+        <option value="pulse">맥박 애니메이션</option>
+        <option value="shimmer">빛 쓸림</option>
+        <option value="gradient">그라데이션 애니메이션</option>
+        <option value="rainbow">무지개 애니메이션</option>
+        <option value="neon">네온</option>
+      </select>
+      <div class="tagEffectHelp">그라데이션은 기본 색상 + 보조 색상을 사용해.</div>
+    </label>
+    <label class="full">애니메이션 속도 <span id="tSpeedVal" class="muted">8초</span>
+      <input id="tSpeed" type="range" min="2" max="16" step="1" value="8" oninput="tSpeedVal.textContent=this.value+'초'">
+      <div class="tagEffectHelp">숫자가 클수록 천천히 흐름.</div>
+    </label>
+  </div>
+  <div class="controls"><button class="btn green" onclick="saveTag()">저장</button><button class="btn" onclick="closeM('tagModal')">취소</button></div>
+</div></div>
+
+<div id="historyModal" class="modal"><div class="box">
+  <h2>사건 기록</h2>
+  <div class="form">
+    <label>날짜<input id="hDate" type="date"></label>
+    <label>제목<input id="hTitle"></label>
+
+    <div class="full">
+      <span class="muted">구분 아이콘</span>
+      <div class="historyIconChoices" id="hIcons">
+        <label><input type="radio" name="historyIcon" value="📌" checked>📌</label>
+        <label><input type="radio" name="historyIcon" value="🏆">🏆</label>
+        <label><input type="radio" name="historyIcon" value="⚔️">⚔️</label>
+        <label><input type="radio" name="historyIcon" value="🎉">🎉</label>
+        <label><input type="radio" name="historyIcon" value="📢">📢</label>
+        <label><input type="radio" name="historyIcon" value="👑">👑</label>
+        <label><input type="radio" name="historyIcon" value="🛠️">🛠️</label>
+        <label><input type="radio" name="historyIcon" value="💬">💬</label>
+        <label><input type="radio" name="historyIcon" value="🗓️">🗓️</label>
+        <label><input type="radio" name="historyIcon" value="⭐">⭐</label>
+      </div>
+    </div>
+
+    <label class="full">내용<textarea id="hBody"></textarea></label>
+  </div>
+  <div class="controls"><button class="btn green" onclick="saveHistory()">저장</button><button class="btn" onclick="closeM('historyModal')">취소</button></div>
+</div></div>
+
+<div id="newsModal" class="modal"><div class="box">
+  <h2>뉴스 작성</h2>
+  <div class="form">
+    <label>날짜<input id="nDate" type="date"></label>
+    <label>분류
+      <select id="nCategory">
+        <option>소식</option>
+        <option>공지</option>
+        <option>이벤트</option>
+        <option>업데이트</option>
+        <option>기록</option>
+      </select>
+    </label>
+    <label class="full">제목<input id="nTitle"></label>
+    <label class="full">내용<textarea id="nBody" rows="6"></textarea></label>
+  </div>
+  <div class="controls"><button class="btn green" onclick="saveNews()">저장</button><button class="btn" onclick="closeM('newsModal')">취소</button></div>
+</div></div>
+
+<div id="wantedModal" class="modal"><div class="box">
+  <h2>🎯 현상수배 등록</h2>
+  <div class="form">
+    <label>닉네임<input id="wName" placeholder="게임 닉네임"></label>
+    <label>등록일<input id="wDate" type="date"></label>
+    <label class="full">현상수배 사유 / 메모<textarea id="wReason" rows="5" placeholder="예: 길드 규칙 반복 위반, 연락 필요, 확인 요청 등"></textarea></label>
+  </div>
+  <div class="controls"><button class="btn green" onclick="saveWanted()">저장</button><button class="btn" onclick="closeM('wantedModal')">취소</button></div>
+</div></div>
+
+<div id="adminModal" class="modal"><div class="box adminLoginBox">
+  <h2>🔐 관리자 로그인</h2>
+  <div class="form">
+    <label class="full">관리자 비밀번호
+      <input id="adminPassword" type="password" autocomplete="current-password" placeholder="비밀번호 입력"
+             onkeydown="if(event.key==='Enter')adminLogin()">
+    </label>
+  </div>
+  <div id="adminLoginError" style="display:none;color:#ff7a86;font-size:12px;margin-top:8px">비밀번호가 올바르지 않습니다.</div>
+  <div class="adminHint">로그인 상태는 현재 브라우저 탭을 닫을 때까지 유지됩니다.</div>
+  <div class="controls">
+    <button class="btn green" onclick="adminLogin()">로그인</button>
+    <button class="btn" onclick="closeM('adminModal')">취소</button>
+  </div>
+</div></div>
+
+<script>
+const STORE_KEY='krongDashboardV5';
+const TUNE_KEY='krongAvatarTuneV2';
+const PODIUM_THEME_KEY='krongPodiumThemeV1';
+const PODIUM_CUSTOM_BG_KEY='krongPodiumCustomBgV1';
+const PODIUM_BG_ADJUST_KEY='krongPodiumBgAdjustV1';
+const ADMIN_PASSWORD_HASH='becd5772df9a7d8412e66f5c2406905043f4193cfc3ec0b89da217130108d821';
+const ADMIN_SESSION_KEY='krongAdminSessionV1';
+
+let D = JSON.parse(localStorage.getItem(STORE_KEY) || 'null') || {
+  members:[
+    {id:'m1',name:'뒤플레시',status:'ok',from:'',to:'',awayReason:'',memo:'',tags:[1,2],raid:false,content:true}
+  ],
+  tags:[
+    {id:1,name:'핵심멤버',color:'#8c3acb',color2:'#ff5fc4',effect:'glow',rainbow:false},
+    {id:2,name:'톡방 참여',color:'#2387df',color2:'#58d3ff',effect:'shadow',rainbow:false},
+    {id:3,name:'신규',color:'#24a65a',color2:'#9eff8a',effect:'gradient',rainbow:false}
+  ],
+  history:[],
+  awards:{
+    raid:{month:9,week:'n',type:'토벌전',names:['뒤플레시','',''],scores:['','','']},
+    contrib:{month:9,week:'n',type:'공헌도',names:['','',''],scores:['','','']}
+  },
+  awardTab:'raid'
+};
+
+
+D.siteSettings = D.siteSettings || {};
+if(typeof D.siteSettings.subtitle !== 'string') D.siteSettings.subtitle = '같이, 오래, 재미있게';
+
+if(!D.statusSettings){
+  D.statusSettings = {
+    ok:{name:'접속',color:'#43dc82'},
+    off:{name:'미접속',color:'#ff616c'},
+    away:{name:'미접속 예약',color:'#ffd04f'}
+  };
+}else{
+  D.statusSettings.ok = D.statusSettings.ok || {name:'접속',color:'#43dc82'};
+  D.statusSettings.off = D.statusSettings.off || {name:'미접속',color:'#ff616c'};
+  D.statusSettings.away = D.statusSettings.away || {name:'미접속 예약',color:'#ffd04f'};
+}
+
+D.history = D.history || [];
+D.history.forEach((h,i)=>{ if(!h.id) h.id = 'hist_'+i+'_'+String(h.date||'').replace(/\D/g,''); });
+D.news = D.news || [];
+D.news.forEach((n,i)=>{ if(!n.id) n.id = 'news_'+i+'_'+String(n.date||'').replace(/\D/g,''); });
+D.wanted = D.wanted || [];
+D.wanted.forEach((w,i)=>{ if(!w.id) w.id = 'wanted_'+i+'_'+String(w.date||'').replace(/\D/g,''); });
+
+let avatarTune = JSON.parse(localStorage.getItem(TUNE_KEY) || 'null') || {
+  profileSize:300, profileX:0, profileY:36,
+  podiumSize:270, podiumX:0, podiumY:72
+};
+
+let editM=null, editT=null, editH=null, editN=null, editW=null;
+
+D.members = D.members || [];
+D.members.forEach(m=>{
+  if(typeof m.memo !== 'string') m.memo = '';
+  if(typeof m.awayReason !== 'string') m.awayReason = '';
+});
+
+let customPodiumBg = localStorage.getItem(PODIUM_CUSTOM_BG_KEY) || '';
+let podiumBgAdjust = JSON.parse(localStorage.getItem(PODIUM_BG_ADJUST_KEY) || 'null') || {size:100,x:0,y:0};
+
+function normalizeAwardData(){
+  if(!D.awards) D.awards = {};
+  if(!D.awards.raid) D.awards.raid = {month:9,week:'n',type:'토벌전',names:['','',''],scores:['','','']};
+  if(!D.awards.contrib) D.awards.contrib = {month:9,week:'n',type:'공헌도',names:['','',''],scores:['','','']};
+  if(!D.awardTab) D.awardTab = 'raid';
+  // If older stored contrib data was unintentionally mirrored, keep contrib independently editable.
+  if(D.awards.contrib.type !== '공헌도') D.awards.contrib.type = '공헌도';
+  if(D.awards.raid.type !== '토벌전') D.awards.raid.type = '토벌전';
+}
+normalizeAwardData();
+
+const av = n => 'https://mgf.gg/ranking/ranking_image.php?n=' + encodeURIComponent(n || '');
+const esc = s => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+
+
+function applyPodiumBg(){
+  let value = 'radial-gradient(circle at 50% 0,#184e79,#0c1b2a 65%)';
+  if(customPodiumBg) value = `url("${customPodiumBg}")`;
+
+  document.documentElement.style.setProperty('--podium-bg', value);
+  document.documentElement.style.setProperty('--podium-bg-size', podiumBgAdjust.size);
+  document.documentElement.style.setProperty('--podium-bg-x', podiumBgAdjust.x);
+  document.documentElement.style.setProperty('--podium-bg-y', podiumBgAdjust.y);
+
+  if(document.getElementById('bgSize')){
+    bgSize.value = podiumBgAdjust.size;
+    bgX.value = podiumBgAdjust.x;
+    bgY.value = podiumBgAdjust.y;
+    bgSizeVal.textContent = podiumBgAdjust.size + '%';
+    bgXVal.textContent = podiumBgAdjust.x + 'px';
+    bgYVal.textContent = podiumBgAdjust.y + 'px';
+  }
+  if(document.getElementById('bgStatus')){
+    bgStatus.textContent = customPodiumBg
+      ? '내 배경 이미지 저장됨 · 시상대 영역에만 적용 중'
+      : '업로드한 배경 이미지 없음';
+  }
+}
+function setPodiumTheme(theme){
+  if(theme === 'custom' && !customPodiumBg){
+    alert('먼저 배경 이미지를 첨부해줘.');
+    return;
+  }
+  applyPodiumBg();
+}
+function uploadCustomPodiumBg(event){
+  if(!requireAdmin()) return;
+  const file = event.target.files && event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    try{
+      customPodiumBg = reader.result;
+      localStorage.setItem(PODIUM_CUSTOM_BG_KEY, customPodiumBg);
+      applyPodiumBg();
+      renderAward();
+    }catch(err){
+      alert('이미지 저장에 실패했어. 이미지 용량을 줄인 뒤 다시 시도해줘.');
+    }
+  };
+  reader.readAsDataURL(file);
+}
+function removeCustomPodiumBg(){
+  if(!requireAdmin()) return;
+  customPodiumBg = '';
+  localStorage.removeItem(PODIUM_CUSTOM_BG_KEY);
+  if(document.getElementById('customBgFile')) customBgFile.value = '';
+  applyPodiumBg();
+  renderAward();
+}
+function bindPodiumBgAdjust(){
+  if(!isAdmin()) return;
+  const items = [['bgSize','size'],['bgX','x'],['bgY','y']];
+  items.forEach(([id,key])=>{
+    const el = document.getElementById(id);
+    if(!el || el.dataset.bound) return;
+    el.dataset.bound = '1';
+    el.addEventListener('input', ()=>{
+      podiumBgAdjust[key] = Number(el.value);
+      localStorage.setItem(PODIUM_BG_ADJUST_KEY, JSON.stringify(podiumBgAdjust));
+      applyPodiumBg();
+    });
+  });
+}
+function resetPodiumBgAdjust(){
+  if(!requireAdmin()) return;
+  podiumBgAdjust = {size:100,x:0,y:0};
+  localStorage.setItem(PODIUM_BG_ADJUST_KEY, JSON.stringify(podiumBgAdjust));
+  applyPodiumBg();
+}
+
+
+
+function renderGuildSubtitle(){
+  const subtitle = D.siteSettings?.subtitle || '같이, 오래, 재미있게';
+  const el = document.getElementById('guildSubtitle');
+  if(el) el.textContent = subtitle;
+  const input = document.getElementById('guildSubtitleInput');
+  if(input) input.value = subtitle;
+}
+function saveGuildSubtitle(){
+  if(!requireAdmin()) return;
+  const input = document.getElementById('guildSubtitleInput');
+  if(!input) return;
+  const value = input.value.trim() || '같이, 오래, 재미있게';
+  D.siteSettings = D.siteSettings || {};
+  D.siteSettings.subtitle = value;
+  persist();
+}
+
+function isAdmin(){
+  return sessionStorage.getItem(ADMIN_SESSION_KEY)==='1';
+}
+async function sha256(text){
+  const data=new TextEncoder().encode(text);
+  const digest=await crypto.subtle.digest('SHA-256',data);
+  return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function applyAdminMode(){
+  const admin=isAdmin();
+  document.body.classList.toggle('admin-mode',admin);
+  const btn=document.getElementById('adminNavButton');
+  const state=document.getElementById('adminState');
+  if(btn) btn.textContent=admin?'🔓 관리자 로그아웃':'🔐 관리자 로그인';
+  if(state) state.textContent=admin?'관리자 편집 모드':'일반 열람 모드';
+
+  // If admin-only page is open and the session ends, return to dashboard.
+  const current=document.querySelector('.page.on');
+  if(!admin && current && ['members','tags','avatarTune'].includes(current.id)) go('dash');
+}
+function toggleAdminLogin(){
+  if(isAdmin()){
+    if(confirm('관리자 로그아웃할까요?')){
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      applyAdminMode();
+      render();
+    }
+    return;
+  }
+  adminPassword.value='';
+  adminLoginError.style.display='none';
+  document.getElementById('adminModal').classList.add('on');
+  setTimeout(()=>adminPassword.focus(),50);
+}
+async function adminLogin(){
+  const hash=await sha256(adminPassword.value);
+  if(hash!==ADMIN_PASSWORD_HASH){
+    adminLoginError.style.display='block';
+    adminPassword.select();
+    return;
+  }
+  sessionStorage.setItem(ADMIN_SESSION_KEY,'1');
+  closeM('adminModal');
+  applyAdminMode();
+  render();
+}
+function requireAdmin(){
+  if(isAdmin()) return true;
+  alert('관리자 로그인 후 사용할 수 있는 기능입니다.');
+  toggleAdminLogin();
+  return false;
+}
+
+function persist(){ localStorage.setItem(STORE_KEY, JSON.stringify(D)); render(); }
+function persistTune(){ localStorage.setItem(TUNE_KEY, JSON.stringify(avatarTune)); applyAvatarTuning(); }
+
+document.querySelectorAll('.nav button[data-p]').forEach(b => b.onclick = () => go(b.dataset.p));
+function go(p){
+  const page=document.getElementById(p);
+  const navBtn=document.querySelector(`[data-p="${p}"]`);
+  if(!page || !navBtn) return;
+  document.querySelectorAll('.page,.nav button[data-p]').forEach(x => x.classList.remove('on'));
+  page.classList.add('on');
+  navBtn.classList.add('on');
+}
+
+function normalizeTagEffect(t){
+  if(t.effect) return t.effect;
+  if(t.rainbow) return 'rainbow';
+  return 'none';
+}
+function tagChip(t){
+  if(!t) return '';
+  const effect = normalizeTagEffect(t);
+  const c1 = t.color || '#3377dd';
+  const c2 = t.color2 || '#8c5cff';
+  const speed = Number(t.speed || 8); const style = `--tag-c1:${c1};--tag-c2:${c2};--tag-speed:${speed}s;background:${c1};color:#fff`;
+  return `<span class="tag effect-${effect}" style="${style}">${esc(t.name)}</span>`;
+}
+function tagById(id){ return tagChip(D.tags.find(x => x.id === id)); }
+
+function memberRow(m, manage=false){
+  const st = D.statusSettings[m.status] || D.statusSettings.ok;
+  const status = `<span class="status" style="color:${st.color}">● ${esc(st.name)}</span>`;
+
+  let awayInfo = '';
+  if(m.status==='away'){
+    const dateText = (m.from || m.to)
+      ? `${esc(m.from || '시작일 미정')}${m.from && m.to ? ' ~ ' : ''}${esc(m.to || '')}`
+      : '날짜 미지정';
+    const reasonText = m.awayReason ? ` · 사유: ${esc(m.awayReason)}` : '';
+    awayInfo = `<div class="awayInfo">📅 <b>${dateText}</b>${reasonText}</div>`;
+  }
+
+  return `<div class="member">
+    <div class="person"><div class="face"><img src="${av(m.name)}"></div>${esc(m.name)}</div>
+
+    <div class="statusTagLine">
+      ${status}
+      <div class="tags">${m.tags.map(tagById).join('')}</div>
+    </div>
+
+    <div class="memberMemo">${m.memo ? esc(m.memo) : ''}</div>
+
+    <div>${manage ? `<button class="btn" onclick="openMember('${m.id}')">✎</button> <button class="btn red" onclick="delMember('${m.id}')">×</button>` : ''}</div>
+
+    ${awayInfo}
+  </div>`;
+}
+function renderMembers(){
+  const dash = document.getElementById('dashMembers');
+  const full = document.getElementById('memberList');
+  dash.innerHTML = D.members.length ? D.members.map(m => memberRow(m)).join('') : '<p class="muted">길드원이 없습니다.</p>';
+  full.innerHTML = D.members.length ? D.members.map(m => memberRow(m,true)).join('') : '<p class="muted">길드원이 없습니다.</p>';
+
+  const off = D.members.filter(x => x.status==='off').length;
+  const away = D.members.filter(x => x.status==='away').length;
+  const on = D.members.length - off - away;
+  const sOk=D.statusSettings.ok, sOff=D.statusSettings.off, sAway=D.statusSettings.away;
+  document.getElementById('stats').innerHTML = `
+    <span class="chip">전체 ${D.members.length}</span>
+    <span class="chip" style="color:${sOk.color};border-color:${sOk.color}">${esc(sOk.name)} ${on}</span>
+    <span class="chip" style="color:${sOff.color};border-color:${sOff.color}">${esc(sOff.name)} ${off}</span>
+    <span class="chip" style="color:${sAway.color};border-color:${sAway.color}">${esc(sAway.name)} ${away}</span>`;
+}
+function toggle(id, key){ const m = D.members.find(x => x.id===id); if(!m) return; m[key]=!m[key]; persist(); }
+function openMember(id=null){
+  if(!requireAdmin()) return;
+  editM=id;
+  mStatusOk.textContent = D.statusSettings.ok.name;
+  mStatusOff.textContent = D.statusSettings.off.name;
+  mStatusAway.textContent = D.statusSettings.away.name;
+  const m = D.members.find(x => x.id===id);
+  mName.value = m?.name || '';
+  mStatus.value = m?.status || 'ok';
+  mFrom.value = m?.from || '';
+  mTo.value = m?.to || '';
+  mAwayReason.value = m?.awayReason || '';
+  mMemo.value = m?.memo || '';
+  mTags.innerHTML = D.tags.map(t => `<label class="badge"><input type="checkbox" value="${t.id}" ${m?.tags.includes(t.id)?'checked':''}> ${esc(t.name)}</label>`).join('');
+  document.getElementById('memberModal').classList.add('on');
+}
+function saveMember(){
+  if(!requireAdmin()) return;
+  if(!mName.value.trim()) return alert('닉네임을 입력해주세요.');
+  const tags = [...mTags.querySelectorAll('input:checked')].map(x => Number(x.value));
+  const obj = {
+    name:mName.value.trim(),
+    status:mStatus.value,
+    from:mFrom.value,
+    to:mTo.value,
+    awayReason:mAwayReason.value.trim(),
+    memo:mMemo.value.trim(),
+    tags
+  };
+  const m = D.members.find(x => x.id===editM);
+  if(m) Object.assign(m, obj);
+  else D.members.push({id:crypto.randomUUID(), raid:false, content:false, ...obj});
+  closeM('memberModal'); persist();
+}
+function delMember(id){
+  if(!requireAdmin()) return; if(confirm('삭제할까요?')){ D.members = D.members.filter(x => x.id!==id); persist(); } }
+function resetWeek(){ if(confirm('주간 참여 상태를 초기화할까요?')){ D.members.forEach(x => {x.raid=false; x.content=false;}); persist(); } }
+
+
+function renderStatusSettings(){
+  const wrap = document.getElementById('statusSettings');
+  if(!wrap) return;
+  const defs = [
+    ['ok','접속 상태'],
+    ['off','미접속 상태'],
+    ['away','예약 상태']
+  ];
+  wrap.innerHTML = defs.map(([key,label])=>{
+    const s=D.statusSettings[key];
+    return `<div class="statusSettingRow">
+      <div class="statusKey">${label}</div>
+      <input id="statusName_${key}" value="${esc(s.name)}" oninput="previewStatusSetting('${key}')">
+      <input id="statusColor_${key}" type="color" value="${s.color}" oninput="previewStatusSetting('${key}')">
+      <div id="statusPreview_${key}" class="statusPreview" style="color:${s.color}">● ${esc(s.name)}</div>
+      <button class="btn" onclick="saveStatusSetting('${key}')">저장</button>
+    </div>`;
+  }).join('');
+}
+function previewStatusSetting(key){
+  const name=document.getElementById('statusName_'+key).value;
+  const color=document.getElementById('statusColor_'+key).value;
+  const p=document.getElementById('statusPreview_'+key);
+  p.textContent='● '+name;
+  p.style.color=color;
+}
+function saveStatusSetting(key){
+  if(!requireAdmin()) return;
+  D.statusSettings[key]={
+    name:document.getElementById('statusName_'+key).value.trim() || D.statusSettings[key].name,
+    color:document.getElementById('statusColor_'+key).value
+  };
+  persist();
+}
+
+function renderTags(){
+  document.getElementById('tagList').innerHTML = D.tags.map(t => `
+    <div class="tagrow">${tagChip(t)}<span class="spacer"></span>
+      <button class="btn" onclick="openTag(${t.id})">수정</button>
+      <button class="btn red" onclick="delTag(${t.id})">삭제</button>
+    </div>`).join('');
+}
+function openTag(id=null){
+  if(!requireAdmin()) return;
+  editT=id;
+  const t = D.tags.find(x => x.id===id);
+  tName.value = t?.name || '';
+  tColor.value = t?.color || '#3377dd';
+  tColor2.value = t?.color2 || '#8c5cff';
+  tEffect.value = t ? normalizeTagEffect(t) : 'none';
+  tSpeed.value = Number(t?.speed || 8);
+  tSpeedVal.textContent = tSpeed.value + '초';
+  document.getElementById('tagModal').classList.add('on');
+}
+function saveTag(){
+  if(!requireAdmin()) return;
+  if(!tName.value.trim()) return;
+  const obj = {
+    name:tName.value.trim(),
+    color:tColor.value,
+    color2:tColor2.value,
+    effect:tEffect.value,
+    speed:Number(tSpeed.value || 8),
+    rainbow:false
+  };
+  const t = D.tags.find(x => x.id===editT);
+  if(t) Object.assign(t, obj); else D.tags.push({id:Date.now(), ...obj});
+  closeM('tagModal'); persist();
+}
+function delTag(id){
+  if(!requireAdmin()) return;
+  D.tags = D.tags.filter(x => x.id!==id);
+  D.members.forEach(m => m.tags = m.tags.filter(t => t!==id));
+  persist();
+}
+
+function renderHistory(){
+  const arr = [...D.history].sort((a,b) => b.date.localeCompare(a.date));
+  document.getElementById('historyList').innerHTML = arr.length
+    ? arr.map(h => {
+        const icon = h.icon || '📌';
+        return `<div class="history">
+          <time>${esc(h.date)}</time>
+          <div class="historyTitleLine"><span class="historyIcon">${icon}</span><b>${esc(h.title)}</b></div>
+          <span class="muted">${esc(h.body)}</span>
+          <div class="historyActions adminOnly inline">
+            <button class="btn" onclick="openHistory('${h.id}')">수정</button>
+            <button class="btn red" onclick="deleteHistory('${h.id}')">삭제</button>
+          </div>
+        </div>`;
+      }).join('')
+    : '<p class="muted">아직 기록이 없습니다.</p>';
+}
+function openHistory(id=null){
+  if(!requireAdmin()) return;
+  editH = id;
+  const h = D.history.find(x => x.id===id);
+  hDate.value = h?.date || new Date().toISOString().slice(0,10);
+  hTitle.value = h?.title || '';
+  hBody.value = h?.body || '';
+
+  const icon = h?.icon || '📌';
+  const radio = document.querySelector(`input[name="historyIcon"][value="${icon}"]`) ||
+                document.querySelector('input[name="historyIcon"][value="📌"]');
+  if(radio) radio.checked = true;
+
+  document.getElementById('historyModal').classList.add('on');
+}
+function saveHistory(){
+  if(!requireAdmin()) return;
+  if(!hDate.value || !hTitle.value.trim()) return;
+  const selected = document.querySelector('input[name="historyIcon"]:checked');
+  const obj = {
+    date:hDate.value,
+    title:hTitle.value.trim(),
+    body:hBody.value.trim(),
+    icon:selected ? selected.value : '📌'
+  };
+
+  const existing = D.history.find(x => x.id===editH);
+  if(existing){
+    Object.assign(existing,obj);
+  }else{
+    D.history.push({id:'hist_'+Date.now(), ...obj});
+  }
+
+  editH = null;
+  closeM('historyModal');
+  persist();
+}
+function deleteHistory(id){
+  if(!requireAdmin()) return;
+  if(!confirm('이 기록을 삭제할까요?')) return;
+  D.history = D.history.filter(x => x.id!==id);
+  persist();
+}
+
+
+function renderNews(){
+  const wrap=document.getElementById('newsList');
+  if(!wrap) return;
+  const arr=[...D.news].sort((a,b)=>b.date.localeCompare(a.date));
+  wrap.innerHTML = arr.length ? arr.map(n=>`
+    <div class="newsItem">
+      <div class="newsMeta"><span>${esc(n.date)}</span><span class="newsBadge">${esc(n.category||'소식')}</span></div>
+      <div class="newsTitle">📰 ${esc(n.title)}</div>
+      <div class="newsBody">${esc(n.body)}</div>
+      <div class="newsActions adminOnly inline">
+        <button class="btn" onclick="openNews('${n.id}')">수정</button>
+        <button class="btn red" onclick="deleteNews('${n.id}')">삭제</button>
+      </div>
+    </div>`).join('') : '<p class="muted">아직 뉴스가 없습니다.</p>';
+}
+function openNews(id=null){
+  if(!requireAdmin()) return;
+  editN=id;
+  const n=D.news.find(x=>x.id===id);
+  nDate.value=n?.date || new Date().toISOString().slice(0,10);
+  nCategory.value=n?.category || '소식';
+  nTitle.value=n?.title || '';
+  nBody.value=n?.body || '';
+  document.getElementById('newsModal').classList.add('on');
+}
+function saveNews(){
+  if(!requireAdmin()) return;
+  if(!nDate.value || !nTitle.value.trim()) return;
+  const obj={date:nDate.value,category:nCategory.value,title:nTitle.value.trim(),body:nBody.value.trim()};
+  const n=D.news.find(x=>x.id===editN);
+  if(n) Object.assign(n,obj);
+  else D.news.push({id:'news_'+Date.now(),...obj});
+  editN=null;
+  closeM('newsModal');
+  persist();
+}
+function deleteNews(id){
+  if(!requireAdmin()) return;
+  if(!confirm('이 뉴스를 삭제할까요?')) return;
+  D.news=D.news.filter(x=>x.id!==id);
+  persist();
+}
+
+
+function renderWanted(){
+  const wrap=document.getElementById('wantedList');
+  if(!wrap) return;
+  const arr=[...D.wanted].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  wrap.innerHTML = arr.length ? arr.map(w=>`
+    <div class="wantedCard">
+      <div class="wantedStamp">WANTED</div>
+      <div class="wantedAvatar"><img src="${av(w.name)}"></div>
+      <div>
+        <div class="wantedName">${esc(w.name)}</div>
+        <div class="wantedReason">${esc(w.reason||'사유 미기재')}</div>
+        <div class="wantedMeta">등록일 ${esc(w.date||'')}</div>
+      </div>
+      <div class="wantedActions adminOnly">
+        <button class="btn" onclick="openWanted('${w.id}')">수정</button>
+        <button class="btn red" onclick="deleteWanted('${w.id}')">삭제</button>
+      </div>
+    </div>`).join('') : '<p class="muted">등록된 현상수배 대상이 없습니다.</p>';
+}
+function openWanted(id=null){
+  if(!requireAdmin()) return;
+  editW=id;
+  const w=D.wanted.find(x=>x.id===id);
+  wName.value=w?.name || '';
+  wDate.value=w?.date || new Date().toISOString().slice(0,10);
+  wReason.value=w?.reason || '';
+  document.getElementById('wantedModal').classList.add('on');
+}
+function saveWanted(){
+  if(!requireAdmin()) return;
+  if(!wName.value.trim()) return alert('닉네임을 입력해주세요.');
+  const obj={
+    name:wName.value.trim(),
+    date:wDate.value || new Date().toISOString().slice(0,10),
+    reason:wReason.value.trim()
+  };
+  const w=D.wanted.find(x=>x.id===editW);
+  if(w) Object.assign(w,obj);
+  else D.wanted.push({id:'wanted_'+Date.now(),...obj});
+  editW=null;
+  closeM('wantedModal');
+  persist();
+}
+function deleteWanted(id){
+  if(!requireAdmin()) return;
+  if(!confirm('이 현상수배 항목을 삭제할까요?')) return;
+  D.wanted=D.wanted.filter(x=>x.id!==id);
+  persist();
+}
+
+function awardTabsHTML(){
+  return `<div class="awardSwitch">
+    <button class="subtab ${D.awardTab==='raid'?'on':''}" onclick="setAwardViewTab('raid')">🏆 토벌전 TOP3</button>
+    <button class="subtab ${D.awardTab==='contrib'?'on':''}" onclick="setAwardViewTab('contrib')">🎖 공헌도 TOP3</button>
+  </div>`;
+}
+
+function setAwardViewTab(tab){
+  const next=tab==='contrib'?'contrib':'raid';
+  if(isAdmin()){
+    setAwardTab(next);
+    return;
+  }
+  D.awardTab=next;
+  document.getElementById('awardEditor').innerHTML=awardPanelHTML(true,D.awardTab);
+  applyAdminMode();
+  applyPodiumBg();
+  go('awards');
+}
+
+function dashAwardTabsHTML(){
+  return `<div class="dashAwardSwitch">
+    <button class="${D.dashAwardTab==='raid'?'on':''}" onclick="setDashAwardTab('raid')">🏆 토벌전 TOP3</button>
+    <button class="${D.dashAwardTab==='contrib'?'on':''}" onclick="setDashAwardTab('contrib')">🎖 공헌도 TOP3</button>
+  </div>`;
+}
+function setDashAwardTab(tab){
+  D.dashAwardTab = tab === 'contrib' ? 'contrib' : 'raid';
+  localStorage.setItem(STORE_KEY, JSON.stringify(D));
+  renderDashboardAward();
+}
+function renderDashboardAward(){
+  const sw = document.getElementById('dashAwardSwitch');
+  const pod = document.getElementById('dashPodium');
+  if(sw) sw.innerHTML = dashAwardTabsHTML();
+  if(pod) pod.innerHTML = awardPanelHTML(false, D.dashAwardTab);
+  applyPodiumBg();
+}
+function cloneAward(a, type){
+  return {
+    month: String(a?.month ?? 9),
+    week: String(a?.week ?? 'n'),
+    type,
+    names: [0,1,2].map(i => String(a?.names?.[i] ?? '')),
+    scores: [0,1,2].map(i => String(a?.scores?.[i] ?? ''))
+  };
+}
+D.awards = D.awards || {};
+D.awards.raid = cloneAward(D.awards.raid, '토벌전');
+D.awards.contrib = cloneAward(D.awards.contrib, '공헌도');
+D.awardTab = D.awardTab === 'contrib' ? 'contrib' : 'raid';
+D.dashAwardTab = D.dashAwardTab === 'contrib' ? 'contrib' : 'raid';
+
+function saveCurrentAwardFields(){
+  if(!document.getElementById('aMonth')) return;
+  const tab = D.awardTab;
+  const A = D.awards[tab];
+  A.month = String(aMonth.value || '');
+  A.week = String(aWeek.value || '');
+  A.names = [an0.value, an1.value, an2.value].map(String);
+  A.scores = [as0.value, as1.value, as2.value].map(String);
+  localStorage.setItem(STORE_KEY, JSON.stringify(D));
+}
+function saveAwardNow(){
+  if(!requireAdmin()) return;
+  saveCurrentAwardFields();
+  renderAward();
+  bindPodiumBgAdjust();
+  applyPodiumBg();
+}
+function setAwardTab(tab){
+  if(!requireAdmin()) return;
+  saveCurrentAwardFields();
+  D.awardTab = tab === 'contrib' ? 'contrib' : 'raid';
+  localStorage.setItem(STORE_KEY, JSON.stringify(D));
+  document.getElementById('awardEditor').innerHTML = awardPanelHTML(true, D.awardTab);
+  bindPodiumBgAdjust();
+  applyPodiumBg();
+  go('awards');
+}
+function getCurrentAward(){ return D.awards[D.awardTab]; }
+
+function awardPanelHTML(editor=false, tab='raid'){
+  const A = D.awards[tab];
+  const places = [1,0,2].map(idx => {
+    const rank = idx+1;
+    const n = (A.names[idx] || '').trim() || '미정';
+    return `<div class="place p${rank}">
+      <div class="charStage">${n==='미정' ? '' : `<img class="char" src="${av(n)}">`}</div>
+      <div class="who">${rank===1?'👑 ':''}${esc(n)}</div>
+      <div class="step">${rank}</div>
+    </div>`;
+  }).join('');
+
+  const visual = `<div class="awardVisual">
+    <div class="heroHead">
+      <h1>🦖 크롱단 길드 ${esc(A.month)}월 ${esc(A.week)}째주</h1>
+      <p>${esc(A.type)} TOP3</p>
+    </div>
+    <div class="podium">${places}</div>
+  </div>`;
+
+  if(!editor) return visual;
+
+  return `<div class="panel awardEditorPanel">
+    ${awardTabsHTML()}
+    ${visual}
+    <div class="awardEditorControls adminOnly block">
+      <div class="controls">
+        <input id="aMonth" type="number" min="1" max="12" value="${esc(A.month)}" placeholder="월">
+        <input id="aWeek" value="${esc(A.week)}" placeholder="몇째주">
+      </div>
+
+      <div class="controls">
+        <input id="an0" value="${esc(A.names[0]||'')}" placeholder="1위 닉네임">
+        <input id="as0" value="${esc(A.scores[0]||'')}" placeholder="${A.type==='공헌도'?'1위 공헌도':'1위 점수'}">
+        <input id="an1" value="${esc(A.names[1]||'')}" placeholder="2위 닉네임">
+        <input id="as1" value="${esc(A.scores[1]||'')}" placeholder="${A.type==='공헌도'?'2위 공헌도':'2위 점수'}">
+        <input id="an2" value="${esc(A.names[2]||'')}" placeholder="3위 닉네임">
+        <input id="as2" value="${esc(A.scores[2]||'')}" placeholder="${A.type==='공헌도'?'3위 공헌도':'3위 점수'}">
+      </div>
+
+      <div class="bgControlPanel">
+        <div class="bgUploadRow">
+          <input id="customBgFile" type="file" accept="image/*" onchange="uploadCustomPodiumBg(event)">
+          <button class="btn" onclick="setPodiumTheme('custom')">내 이미지 적용</button>
+          <button class="btn" onclick="removeCustomPodiumBg()">내 이미지 삭제</button>
+        </div>
+        <div id="bgStatus" class="bgStatus">업로드한 배경 이미지는 이 브라우저에 저장돼.</div>
+
+        <div class="ctrl"><label>배경 크기 <span id="bgSizeVal"></span></label><input id="bgSize" type="range" min="60" max="220" step="1"></div>
+        <div class="ctrl"><label>좌우 이동 <span id="bgXVal"></span></label><input id="bgX" type="range" min="-500" max="500" step="1"></div>
+        <div class="ctrl"><label>상하 이동 <span id="bgYVal"></span></label><input id="bgY" type="range" min="-300" max="300" step="1"></div>
+
+        <div class="controls">
+          <button class="btn" onclick="resetPodiumBgAdjust()">배경 위치/크기 초기화</button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn green" onclick="saveAwardNow()">TOP3 저장</button>
+        <button class="btn gold" onclick="saveCard()">이미지 카드 저장</button>
+      </div>
+    </div>
+  </div>`;
+}
+function updAward(){
+  if(!requireAdmin()) return; saveCurrentAwardFields(); }
+function renderAward(){
+  renderDashboardAward();
+  document.getElementById('awardEditor').innerHTML = awardPanelHTML(true, D.awardTab);
+  bindPodiumBgAdjust();
+  applyPodiumBg();
+}
+async function saveCard(){
+  const A=getCurrentAward();
+  const visual=document.querySelector('#awardEditor .awardVisual');
+  if(!visual){ alert('저장할 TOP3 카드가 없어.'); return; }
+
+  const rect=visual.getBoundingClientRect();
+  const width=Math.max(720,Math.round(rect.width*2));
+  const height=Math.max(520,Math.round(rect.height*2));
+
+  // Clone just the visual card so edit controls/background sliders never enter the saved image.
+  const clone=visual.cloneNode(true);
+  clone.style.width=(width/2)+'px';
+  clone.style.height=(height/2)+'px';
+  clone.style.margin='0';
+  clone.style.boxSizing='border-box';
+
+  // Inline core style values needed by the cloned card.
+  const computed=getComputedStyle(visual);
+  clone.style.background=computed.background;
+  clone.style.backgroundSize=computed.backgroundSize;
+  clone.style.backgroundPosition=computed.backgroundPosition;
+  clone.style.backgroundRepeat='no-repeat';
+
+  // Serialize as an SVG image. This avoids canvas export failures caused by MGF's cross-origin avatar images.
+  const wrapper=document.createElement('div');
+  wrapper.setAttribute('xmlns','http://www.w3.org/1999/xhtml');
+  wrapper.style.width=(width/2)+'px';
+  wrapper.style.height=(height/2)+'px';
+  wrapper.style.background='#07111c';
+  wrapper.appendChild(clone);
+
+  const serializer=new XMLSerializer();
+  const foreign=serializer.serializeToString(wrapper);
+  const css=[...document.styleSheets].map(sheet=>{
+    try{return [...sheet.cssRules].map(r=>r.cssText).join('\n')}catch(e){return ''}
+  }).join('\n');
+
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width/2} ${height/2}">
+    <foreignObject width="100%" height="100%">
+      <style xmlns="http://www.w3.org/1999/xhtml">${css.replace(/<\/style>/g,'')}
+.memberMemo{color:#c9d6e1;font-size:12px}
+
+
+.wantedGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.wantedCard{
+  position:relative;display:grid;grid-template-columns:72px 1fr auto;gap:12px;align-items:center;
+  padding:14px;border:1px solid #6b4b35;border-radius:14px;
+  background:linear-gradient(145deg,#2b2118,#17140f);box-shadow:0 10px 24px #0004
+}
+.wantedAvatar{
+  width:68px;height:68px;border-radius:50%;overflow:hidden;position:relative;
+  background:#0b1118;border:3px solid #9d6b3f
+}
+.wantedAvatar img{
+  position:absolute;left:50%;top:50%;
+  width:calc(var(--profile-size) * 1px);
+  height:calc(var(--profile-size) * 1px);
+  max-width:none;object-fit:contain;transform:translate(-50%,-50%);
+  margin-left:calc(var(--profile-x) * 1px);
+  margin-top:calc(var(--profile-y) * 1px)
+}
+.wantedName{font-size:18px;font-weight:1000;color:#ffd18a;margin-bottom:5px}
+.wantedReason{color:#ead8c2;font-size:13px;white-space:pre-wrap;line-height:1.45}
+.wantedMeta{font-size:11px;color:#b99f84;margin-top:6px}
+.wantedActions{display:flex;gap:6px;flex-direction:column}
+.wantedActions .btn{padding:7px 9px;font-size:11px}
+.wantedStamp{
+  position:absolute;right:12px;top:10px;font-size:10px;font-weight:1000;letter-spacing:1px;
+  color:#ff8f78;border:1px solid #a64c3e;border-radius:6px;padding:3px 6px;transform:rotate(4deg);opacity:.85
+}
+@media(max-width:760px){
+  .wantedGrid{grid-template-columns:1fr}
+  .wantedCard{grid-template-columns:64px 1fr}
+  .wantedActions{grid-column:1/-1;flex-direction:row;justify-content:flex-end}
+  .wantedAvatar{width:60px;height:60px}
+}
+
+
+/* v6.9 admin gate */
+.adminOnly{display:none !important}
+body.admin-mode .adminOnly{display:flex !important}
+body.admin-mode .adminOnly.block{display:block !important}
+body.admin-mode .adminOnly.grid{display:grid !important}
+body.admin-mode .adminOnly.inline{display:inline-flex !important}
+
+.adminLoginBox{max-width:420px}
+.adminHint{font-size:12px;color:#8ea4ba;line-height:1.5;margin-top:8px}
+.adminState{font-size:10px;color:#8ea4ba;margin:4px 0 0 4px}
+.adminNavBtn{border-color:#35516b !important}
+body.admin-mode .adminNavBtn{color:#6df0a4 !important;border-color:#2b9d60 !important;background:#123527 !important}
+.guestViewNote{
+  margin:10px 0;padding:9px 11px;border:1px solid #29445c;border-radius:10px;
+  color:#9fb4c7;font-size:12px;background:#0c1824
+}
+body.admin-mode .guestViewNote{display:none}
+
+</style>
+      ${foreign}
+    </foreignObject>
+  </svg>`;
+
+  const blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`크롱단_${A.type}_TOP3_${A.month}월_${A.week}째주.svg`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+function closeM(id){ document.getElementById(id).classList.remove('on'); }
+
+function setRootVar(name,val){ document.documentElement.style.setProperty(name, val); }
+function applyAvatarTuning(){
+  setRootVar('--profile-size', avatarTune.profileSize);
+  setRootVar('--profile-x', avatarTune.profileX);
+  setRootVar('--profile-y', avatarTune.profileY);
+  setRootVar('--podium-size', avatarTune.podiumSize);
+  setRootVar('--podium-x', avatarTune.podiumX);
+  setRootVar('--podium-y', avatarTune.podiumY);
+
+  if(document.getElementById('profileSize')){
+    profileSize.value = avatarTune.profileSize; profileSizeVal.textContent = avatarTune.profileSize;
+    profileX.value = avatarTune.profileX; profileXVal.textContent = avatarTune.profileX + 'px';
+    profileY.value = avatarTune.profileY; profileYVal.textContent = avatarTune.profileY + 'px';
+    podiumSize.value = avatarTune.podiumSize; podiumSizeVal.textContent = avatarTune.podiumSize;
+    podiumX.value = avatarTune.podiumX; podiumXVal.textContent = avatarTune.podiumX + 'px';
+    podiumY.value = avatarTune.podiumY; podiumYVal.textContent = avatarTune.podiumY + 'px';
+  }
+  updatePreviewImages();
+}
+function updatePreviewImages(){
+  const nick = (document.getElementById('previewNick')?.value || '').trim() || D.members[0]?.name || D.awards.raid.names[0] || '뒤플레시';
+  if(document.getElementById('previewNick') && !previewNick.value) previewNick.value = nick;
+  if(document.getElementById('previewProfileImg')) previewProfileImg.src = av(nick);
+  if(document.getElementById('previewProfileName')) previewProfileName.textContent = nick;
+  if(document.getElementById('previewPodiumImg')) previewPodiumImg.src = av(nick);
+  if(document.getElementById('previewPodiumName')) previewPodiumName.textContent = nick;
+}
+function applyPreviewNick(){ updatePreviewImages(); }
+function bindAvatarTuning(){
+  if(!isAdmin()) return;
+  const binds = [
+    ['profileSize','profileSize'],['profileX','profileX'],['profileY','profileY'],
+    ['podiumSize','podiumSize'],['podiumX','podiumX'],['podiumY','podiumY']
+  ];
+  binds.forEach(([id,key]) => {
+    const el = document.getElementById(id);
+    if(!el || el.dataset.bound) return;
+    el.dataset.bound = '1';
+    el.addEventListener('input', () => { avatarTune[key] = Number(el.value); persistTune(); });
+  });
+  const pn = document.getElementById('previewNick');
+  if(pn && !pn.dataset.bound){
+    pn.dataset.bound='1';
+    pn.addEventListener('input', updatePreviewImages);
+  }
+}
+function resetAvatarTuning(){
+  if(!requireAdmin()) return;
+  avatarTune = {profileSize:300, profileX:0, profileY:36, podiumSize:270, podiumX:0, podiumY:72};
+  persistTune();
+}
+
+document.addEventListener('input', (e)=>{
+  if(['aMonth','aWeek','an0','as0','an1','as1','an2','as2'].includes(e.target.id)){
+    saveCurrentAwardFields();
+  }
+});
+
+function render(){
+  renderGuildSubtitle();
+  renderMembers();
+  renderAward();
+  renderTags();
+  renderStatusSettings();
+  renderHistory();
+  renderNews();
+  renderWanted();
+  bindAvatarTuning();
+  bindPodiumBgAdjust();
+  applyAvatarTuning();
+  applyPodiumBg();
+  applyAdminMode();
+}
+applyAdminMode();
+render();
+</script>
+</body>
+</html>
